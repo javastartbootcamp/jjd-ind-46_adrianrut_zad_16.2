@@ -2,7 +2,9 @@ package pl.javastart.task;
 
 import java.time.*;
 import java.time.format.DateTimeFormatter;
-import java.util.Scanner;
+import java.time.format.DateTimeParseException;
+import java.time.temporal.ChronoField;
+import java.util.*;
 
 public class Main {
 
@@ -12,24 +14,32 @@ public class Main {
     }
 
     public void run(Scanner scanner) {
-        String dataFormat = "yyyy-MM-dd HH:mm:ss";
-        String tempHour = " 00:00:00";
+        String dataAndTimeFormat = "yyyy-MM-dd HH:mm:ss";
+        String dataFormat = "yyyy-MM-dd";
+        String dateAndTimeWithDotsFormat = "dd.MM.yyyy HH:mm:ss";
+        DateTimeFormatter dataAndTimePattern = DateTimeFormatter.ofPattern(dataAndTimeFormat);
         DateTimeFormatter datePattern = DateTimeFormatter.ofPattern(dataFormat);
-        LocalDateTime localDateTime;
+        DateTimeFormatter dateAndTimeWithDotsPattern = DateTimeFormatter.ofPattern(dateAndTimeWithDotsFormat);
+        List<DateTimeFormatter> formatters = Arrays.asList(dataAndTimePattern, datePattern, dateAndTimeWithDotsPattern);
         System.out.println("Podaj datę");
         String dataInput = scanner.nextLine();
-        if (dataInput.length() <= 10) {
-            localDateTime = LocalDateTime.parse(dataInput + tempHour, datePattern);
-            System.out.println(localDateTime.format(datePattern));
-        } else {
-            localDateTime = LocalDateTime.parse(dataInput, datePattern);
+        LocalDateTime dateTime = null;
+        for (DateTimeFormatter formatter : formatters) {
+            try {
+                dateTime = LocalDateTime.parse(dataInput, formatter);
+            } catch (DateTimeParseException e) {
+                continue;
+            }
         }
-        ZonedDateTime sydney = localDateTime.atZone(ZoneId.of("Australia/Sydney"));
-        System.out.println("Czas lokalny: " + localDateTime.atZone(ZoneId.systemDefault()).format(datePattern));
-        System.out.println("UTC: " + localDateTime.atZone(ZoneId.of("UTC")).format(datePattern));
-        System.out.println("Londyn: " + localDateTime.atZone(ZoneId.of("Europe/London")).format(datePattern));
-        System.out.println("Los Angeles: " + localDateTime.atZone(ZoneId.of("America/Los_Angeles")).format(datePattern));
-        System.out.println("Sydney: " + sydney.format(datePattern));
+
+        assert dateTime != null;
+
+        ZonedDateTime localTime = dateTime.atZone(ZoneId.systemDefault());
+        System.out.println("Czas lokalny: " + localTime.format(dataAndTimePattern));
+        System.out.println("UTC: " + localTime.withZoneSameInstant(ZoneId.of("UTC")).format(dataAndTimePattern));
+        System.out.println("Londyn: " + localTime.withZoneSameInstant(ZoneId.of("Europe/London")).format(dataAndTimePattern));
+        System.out.println("Los Angeles: " + localTime.withZoneSameInstant(ZoneId.of("America/Los_Angeles")).format(dataAndTimePattern));
+        System.out.println("Sydney: " + localTime.withZoneSameInstant(ZoneId.of("Australia/Sydney")).format(dataAndTimePattern));
 
     }
 
