@@ -1,6 +1,9 @@
 package pl.javastart.task;
 
-import java.util.Scanner;
+import java.time.*;
+import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
+import java.util.*;
 
 public class Main {
 
@@ -10,7 +13,74 @@ public class Main {
     }
 
     public void run(Scanner scanner) {
-        // uzupełnij rozwiązanie. Korzystaj z przekazanego w parametrze scannera
+        LocalDateTime dateTime = getLocalDateTime(scanner);
+        if (dateTime == null) {
+            System.out.println("Nie wczytano daty");
+            return;
+        }
+
+        printResult(dateTime);
+
+    }
+
+    private LocalDateTime getLocalDateTime(Scanner scanner) {
+        String[] dateTimeFormats = {"yyyy-MM-dd HH:mm:ss", "yyyy-MM-dd", "dd.MM.yyyy HH:mm:ss"};
+        String[] dateFormats = {"yyyy-MM-dd"};
+        String dataInput = scanner.nextLine();
+        for (String format : dateTimeFormats) {
+            DateTimeFormatter formatter = DateTimeFormatter.ofPattern(format);
+            try {
+                return LocalDateTime.parse(dataInput, formatter);
+            } catch (DateTimeParseException ignore) {
+                //ignore
+            }
+        }
+        for (String format : dateFormats) {
+            DateTimeFormatter formatter = DateTimeFormatter.ofPattern(format);
+            try {
+                return LocalDate.parse(dataInput, formatter).atStartOfDay();
+            } catch (DateTimeParseException ignore) {
+                //ignore
+            }
+        }
+        return null;
+    }
+
+    private void printResult(LocalDateTime dateTime) {
+        DateTimeFormatter dataAndTimePattern = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+        ZonedDateTime localTime = dateTime.atZone(ZoneId.systemDefault());
+        List<DisplayDate> displayDates = List.of(
+                new DisplayDate("Czas lokalny", localTime.getZone()),
+                new DisplayDate("UTC", ZoneId.of("UTC")),
+                new DisplayDate("Londyn", ZoneId.of("Europe/London")),
+                new DisplayDate("Los Angeles", ZoneId.of("America/Los_Angeles")),
+                new DisplayDate("Sydney", ZoneId.of("Australia/Sydney"))
+                );
+
+        for (DisplayDate displayDate : displayDates) {
+            System.out.println(displayDate.getName() + ": "
+                    + localTime.withZoneSameInstant(displayDate.getZone()).format(dataAndTimePattern));
+        }
+    }
+
+    static class DisplayDate {
+        String name;
+        ZoneId zone;
+
+        public DisplayDate(String name, ZoneId zone) {
+            this.name = name;
+            this.zone = zone;
+        }
+
+        public String getName() {
+            return name;
+        }
+
+        public ZoneId getZone() {
+            return zone;
+        }
     }
 
 }
+
+
