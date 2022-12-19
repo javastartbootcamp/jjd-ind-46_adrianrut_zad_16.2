@@ -3,7 +3,6 @@ package pl.javastart.task;
 import java.time.*;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
-import java.time.temporal.ChronoField;
 import java.util.*;
 
 public class Main {
@@ -14,38 +13,72 @@ public class Main {
     }
 
     public void run(Scanner scanner) {
-        String dataAndTimeFormat = "yyyy-MM-dd HH:mm:ss";
-        String dateFormat = "yyyy-MM-dd";
-        String dateAndTimeWithDotsFormat = "dd.MM.yyyy HH:mm:ss";
-        DateTimeFormatter dataAndTimePattern = DateTimeFormatter.ofPattern(dataAndTimeFormat);
-        DateTimeFormatter datePattern = DateTimeFormatter.ofPattern(dateFormat);
-        DateTimeFormatter dateAndTimeWithDotsPattern = DateTimeFormatter.ofPattern(dateAndTimeWithDotsFormat);
-        List<DateTimeFormatter> formatters = Arrays.asList(dataAndTimePattern, datePattern, dateAndTimeWithDotsPattern);
-        System.out.println("Podaj datę");
-        String dataInput = scanner.nextLine();
-        String dateWithTime = dataInput + " 00:00:00";
-        LocalDateTime dateTime = null;
-        for (DateTimeFormatter formatter : formatters) {
-            try {
-                dateTime = LocalDateTime.parse(dataInput, formatter);
-            } catch (DateTimeParseException e) {
-                if (dataInput.length() <= 10) {
-                    dateTime = LocalDateTime.parse(dateWithTime, dataAndTimePattern);
-                }
-            }
+        LocalDateTime dateTime = getLocalDateTime(scanner);
+        if (dateTime == null) {
+            System.out.println("Nie wczytano daty");
+            return;
         }
 
-        printResult(dataAndTimePattern, dateTime);
+        printResult(dateTime);
 
     }
 
-    private static void printResult(DateTimeFormatter dataAndTimePattern, LocalDateTime dateTime) {
+    private LocalDateTime getLocalDateTime(Scanner scanner) {
+        String[] dateTimeFormats = {"yyyy-MM-dd HH:mm:ss", "yyyy-MM-dd", "dd.MM.yyyy HH:mm:ss"};
+        String[] dateFormats = {"yyyy-MM-dd"};
+        String dataInput = scanner.nextLine();
+        for (String format : dateTimeFormats) {
+            DateTimeFormatter formatter = DateTimeFormatter.ofPattern(format);
+            try {
+                return LocalDateTime.parse(dataInput, formatter);
+            } catch (DateTimeParseException ignore) {
+                //ignore
+            }
+        }
+        for (String format : dateFormats) {
+            DateTimeFormatter formatter = DateTimeFormatter.ofPattern(format);
+            try {
+                return LocalDate.parse(dataInput, formatter).atStartOfDay();
+            } catch (DateTimeParseException ignore) {
+                //ignore
+            }
+        }
+        return null;
+    }
+
+    private void printResult(LocalDateTime dateTime) {
+        DateTimeFormatter dataAndTimePattern = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
         ZonedDateTime localTime = dateTime.atZone(ZoneId.systemDefault());
-        System.out.println("Czas lokalny: " + localTime.format(dataAndTimePattern));
-        System.out.println("UTC: " + localTime.withZoneSameInstant(ZoneId.of("UTC")).format(dataAndTimePattern));
-        System.out.println("Londyn: " + localTime.withZoneSameInstant(ZoneId.of("Europe/London")).format(dataAndTimePattern));
-        System.out.println("Los Angeles: " + localTime.withZoneSameInstant(ZoneId.of("America/Los_Angeles")).format(dataAndTimePattern));
-        System.out.println("Sydney: " + localTime.withZoneSameInstant(ZoneId.of("Australia/Sydney")).format(dataAndTimePattern));
+        List<DisplayDate> displayDates = List.of(
+                new DisplayDate("Czas lokalny", localTime.getZone()),
+                new DisplayDate("UTC", ZoneId.of("UTC")),
+                new DisplayDate("Londyn", ZoneId.of("Europe/London")),
+                new DisplayDate("Los Angeles", ZoneId.of("America/Los_Angeles")),
+                new DisplayDate("Sydney", ZoneId.of("Australia/Sydney"))
+                );
+
+        for (DisplayDate displayDate : displayDates) {
+            System.out.println(displayDate.getName() + ": "
+                    + localTime.withZoneSameInstant(displayDate.getZone()).format(dataAndTimePattern));
+        }
+    }
+
+    static class DisplayDate {
+        String name;
+        ZoneId zone;
+
+        public DisplayDate(String name, ZoneId zone) {
+            this.name = name;
+            this.zone = zone;
+        }
+
+        public String getName() {
+            return name;
+        }
+
+        public ZoneId getZone() {
+            return zone;
+        }
     }
 
 }
